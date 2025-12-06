@@ -1,0 +1,118 @@
+===============================================================================
+Yu-Gi-Oh! Card Creator - Quick Start Guide
+===============================================================================
+
+INSTALLATION
+------------
+
+1. Open Command Prompt or PowerShell
+2. Navigate to this directory:
+   cd "C:\Users\vicky\Downloads\YGOEngine\createCards"
+
+3. Install required Python packages:
+   pip install -r requirements.txt
+
+VERIFY INSTALLATION
+-------------------
+
+Test the installation:
+   python card_creator.py --list-effects
+
+You should see a list of available effect patterns.
+
+BASIC USAGE EXAMPLES
+--------------------
+
+Example 1: Create a Healing Spell Card
+---------------------------------------
+python card_creator.py ^
+  --id 10000200 ^
+  --name "Divine Healing" ^
+  --type spell ^
+  --desc "Restore 1000 Life Points" ^
+  --effect recover_lp ^
+  --effect-amount 1000 ^
+  --image-url "https://example.com/your-image.jpg"
+
+Example 2: Create a Normal Monster
+-----------------------------------
+python card_creator.py ^
+  --id 10000201 ^
+  --name "Crimson Dragon" ^
+  --type monster ^
+  --desc "A fierce dragon with crimson scales" ^
+  --atk 2500 ^
+  --def 2000 ^
+  --level 7 ^
+  --attribute FIRE ^
+  --race Dragon ^
+  --image-url "https://example.com/dragon.jpg"
+
+Example 3: Create a Draw Spell
+-------------------------------
+python card_creator.py ^
+  --id 10000202 ^
+  --name "Card of Fortune" ^
+  --type spell ^
+  --desc "Draw 2 cards" ^
+  --effect draw ^
+  --effect-amount 2 ^
+  --image-url "https://example.com/draw.jpg"
+
+IMPORTANT NOTES
+---------------
+
+1. Card IDs should start at 10000100 or higher to avoid conflicts
+2. Images are automatically downloaded and resized to 177x254 pixels
+3. Lua scripts are automatically generated in ../script/
+4. Cards are added to ../expansions/cards.cdb
+5. All images go to ../pics/
+
+FINDING CARD IMAGES
+-------------------
+
+You can find or create card images from:
+- Card maker websites (e.g., cardmaker.net)
+- Your own custom artwork
+- AI image generators
+- Fan art websites (respect copyright!)
+
+USEFUL COMMANDS
+---------------
+
+List available effect patterns:
+  python card_creator.py --list-effects
+
+List available attributes:
+  python card_creator.py --list-attributes
+
+List available races (monster types):
+  python card_creator.py --list-races
+
+TROUBLESHOOTING
+---------------
+
+If you get "Database not found" error:
+  Make sure you're in the createCards directory, or specify the database:
+  --db "..\expansions\cards.cdb"
+
+If image download fails:
+  You can manually place images in the pics folder as:
+  pics\{CARD_ID}.jpg
+
+If Pillow is not installed:
+  Images won't be resized automatically but will still download
+  Install with: pip install Pillow
+
+NEXT STEPS
+----------
+
+1. Create your first card using one of the examples above
+2. Launch EDOPro to test your card
+3. Check the full README.md for advanced features
+4. Explore the Python API for batch card creation
+
+For detailed documentation, see README.md
+
+===============================================================================
+

@@ -1,0 +1,298 @@
+# Yu-Gi-Oh! Card Creator System - Cursor Rules
+
+## Project Overview
+This is a comprehensive card creation system for EDOPro/YGOPRO that automates:
+- SQLite database management (cards.cdb)
+- Lua script generation for card effects
+- Card image downloading and processing
+- Complete card integration into the game engine
+
+## File Structure
+```
+createCards/
+├── card_creator.py         # Main CLI - entry point for card creation
+├── database_manager.py     # DatabaseManager class - all SQLite operations
+├── script_generator.py     # ScriptGenerator class - Lua script generation
+├── image_downloader.py     # ImageDownloader class - image handling
+├── constants.py            # All game constants (types, attributes, races)
+├── templates/              # Lua script templates for each card type
+│   ├── monster_normal.lua
+│   ├── monster_effect.lua
+│   ├── spell_basic.lua
+│   ├── spell_quickplay.lua
+│   ├── spell_continuous.lua
+│   ├── trap_normal.lua
+│   └── trap_continuous.lua
+├── README.md              # Full documentation
+├── QUICK_START.txt        # Quick reference
+└── requirements.txt       # Python dependencies
+```
+
+## Key Paths (Relative to YGOEngine root)
+- **Database**: `expansions/cards.cdb`
+- **Scripts**: `script/c{CARD_ID}.lua`
+- **Images**: `pics/{CARD_ID}.jpg` or `.png`
+- **Source**: `createCards/` (this directory)
+
+## Card ID Conventions
+- **10000000-19999999**: Custom spell/trap cards
+- **20000000-29999999**: Custom monster cards
+- **30000000-39999999**: Special custom cards
+- **Start at 10000100+** to avoid conflicts with existing custom cards
+- IDs 10000001-10000014 are already used in the system
+
+## Database Schema (cards.cdb)
+
+### datas table
+- `id` INTEGER PRIMARY KEY - Card ID (8 digits)
+- `ot` INTEGER - Scope (SCOPE_OCG_TCG = 0x3 for default visibility)
+- `alias` INTEGER - Alias ID (0 for no alias)
+- `setcode` INTEGER - Set codes (packed as 64-bit)
+- `type` INTEGER - Card type flags (see Type Constants)
+- `atk` INTEGER - Attack points
+- `def` INTEGER - Defense points (or Link Markers for Link monsters)
+- `level` INTEGER - Level/Rank (with pendulum scales packed)
+- `race` INTEGER - Monster race/type
+- `attribute` INTEGER - Attribute
+- `category` INTEGER - Effect category flags
+
+### texts table
+- `id` INTEGER PRIMARY KEY - Card ID
+- `name` TEXT - Card name
+- `desc` TEXT - Card description/effect
+- `str1-str16` TEXT - Additional effect descriptions (rarely used)
+
+## Important Constants (from constants.py)
+
+### Card Types
+- `TYPE_MONSTER = 0x1`, `TYPE_SPELL = 0x2`, `TYPE_TRAP = 0x4`
+- `TYPE_NORMAL = 0x10`, `TYPE_EFFECT = 0x20`
+- `TYPE_QUICKPLAY = 0x10000`, `TYPE_CONTINUOUS = 0x20000`
+- Common: `TYPE_MONSTER_NORMAL = 0x11`, `TYPE_MONSTER_EFFECT = 0x21`
+
+### Attributes
+- `ATTRIBUTE_EARTH = 0x01`, `ATTRIBUTE_WATER = 0x02`, `ATTRIBUTE_FIRE = 0x04`
+- `ATTRIBUTE_WIND = 0x08`, `ATTRIBUTE_LIGHT = 0x10`, `ATTRIBUTE_DARK = 0x20`
+
+### Races (Monster Types)
+- `RACE_DRAGON = 0x2000`, `RACE_WARRIOR = 0x1`, `RACE_SPELLCASTER = 0x2`
+- `RACE_BEAST = 0x4000`, `RACE_PLANT = 0x400`, `RACE_MACHINE = 0x20`
+- See `RACE_NAMES` dict in constants.py for full list
+
+### Scopes (Legality)
+- `SCOPE_OCG = 0x1`, `SCOPE_TCG = 0x2`, `SCOPE_CUSTOM = 0x20`
+- `SCOPE_OCG_TCG = 0x3` - **Use this for cards visible by default**
+
+## Lua Script Structure
+
+### Basic Spell Card Pattern
+```lua
+function c{CARD_ID}.initial_effect(c)
+    local e1=Effect.CreateEffect(c)
+    e1:SetType(EFFECT_TYPE_ACTIVATE)
+    e1:SetCode(EVENT_FREE_CHAIN)
+    e1:SetOperation(c{CARD_ID}.activate)
+    c:RegisterEffect(e1)
+end
+
+function c{CARD_ID}.activate(e,tp,eg,ep,ev,re,r,rp)
+    -- Effect code here
+end
+```
+
+### Common Duel Functions
+- `Duel.Recover(player, amount, REASON_EFFECT)` - Heal LP
+- `Duel.Damage(player, amount, REASON_EFFECT)` - Inflict damage
+- `Duel.Draw(player, count, REASON_EFFECT)` - Draw cards
+- `Duel.Destroy(card/group, REASON_EFFECT)` - Destroy cards
+
+### Effect Function Parameters
+- `e` - The effect object
+- `tp` - Turn player / controller
+- `eg` - Event group
+- `ep` - Event player
+- `ev` - Event value
+- `re` - Reason effect
+- `r` - Reason
+- `rp` - Reason player
+
+## Common Tasks & Patterns
+
+### Creating a Simple Healing Spell
+```python
+creator = CardCreator()
+creator.create_spell(
+    card_id=10000200,
+    name="Healing Spell",
+    desc="Restore 1000 LP",
+    effect_pattern="recover_lp",
+    effect_params={'amount': 1000}
+)
+```
+
+### Creating a Normal Monster
+```python
+creator.create_monster(
+    card_id=10000201,
+    name="Dragon",
+    desc="A powerful dragon",
+    atk=2500, def_val=2000, level=7,
+    attribute=ATTRIBUTE_FIRE,
+    race=RACE_DRAGON,
+    is_normal=True
+)
+```
+
+### Adding Custom Effect (No Template)
+Set `effect_pattern=None` and manually edit the generated Lua script in `script/c{CARD_ID}.lua`
+
+### Batch Card Creation
+```python
+db = DatabaseManager("../expansions/cards.cdb")
+next_id = db.get_next_available_id(10000200)
+
+for i in range(5):
+    creator.create_card({
+        'id': next_id + i,
+        'name': f'Card {i}',
+        # ... other fields
+    })
+```
+
+## Development Guidelines
+
+### When Adding New Features
+1. **New effect pattern**: Add to `ScriptGenerator.EFFECT_PATTERNS` dict
+2. **New card type**: Add template in `templates/` and update `_get_template_name()`
+3. **New constants**: Add to `constants.py` with proper naming
+4. **Database changes**: Update both `DatabaseManager` and schema documentation
+
+### When Debugging
+1. **Database issues**: Use `db.get_card(card_id)` to inspect data
+2. **Script issues**: Check `script/c{CARD_ID}.lua` for syntax
+3. **Image issues**: Use `downloader.verify_image(card_id)` for diagnostics
+4. **Test in-game**: Always test new cards in EDOPro
+
+### Code Style
+- Use type hints for all function parameters
+- Return `bool` for success/failure operations
+- Print informative messages with ✓/✗ symbols
+- Handle exceptions gracefully with try/except
+- Use descriptive variable names (avoid abbreviations)
+
+### Template Placeholders
+Always use these in Lua templates:
+- `{CARD_ID}` - Card ID number
+- `{CARD_NAME}` - Card name
+- `{EFFECT_DESC}` - Effect description
+- `{EFFECT_OPERATION}` - Effect operation code
+- `{EFFECT_CODE}` - Effect type code
+- `{ADDITIONAL_PROPERTIES}` - Additional properties
+
+## Common Issues & Solutions
+
+### "Database not found"
+- Ensure running from createCards/ directory
+- Or specify absolute path with --db flag
+- Check that expansions/cards.cdb exists
+
+### "Card already exists"
+- Use different ID or --overwrite flag
+- Check with `db.card_exists(card_id)`
+- Use `db.get_next_available_id()` to find free ID
+
+### Image download fails
+- Verify URL is accessible
+- Check internet connection
+- Fallback: manually place image in pics/ folder
+- Install Pillow for image processing
+
+### Script not working in-game
+- Check Lua syntax in generated script
+- Verify card is in database with correct type
+- Ensure script filename is `c{CARD_ID}.lua`
+- Restart EDOPro to reload scripts
+
+## Testing Checklist
+When creating new functionality:
+- [ ] Add to database successfully
+- [ ] Generate valid Lua script
+- [ ] Download/verify image (if URL provided)
+- [ ] Card appears in deck editor
+- [ ] Card can be added to deck
+- [ ] Card can be played in duel
+- [ ] Effect works as intended
+- [ ] No console errors in game
+
+## Integration with EDOPro
+- Cards from `expansions/cards.cdb` are automatically loaded
+- Scripts from `script/` are automatically loaded
+- Images from `pics/` are automatically used
+- No need to restart for database changes (reload deck editor)
+- Restart needed for script changes
+
+## API Quick Reference
+
+### DatabaseManager
+- `add_card(card_data: dict) -> bool`
+- `update_card(card_data: dict) -> bool`
+- `delete_card(card_id: int) -> bool`
+- `get_card(card_id: int) -> dict`
+- `card_exists(card_id: int) -> bool`
+- `get_next_available_id(start_id: int) -> int`
+- `list_custom_cards(min_id, max_id) -> list`
+
+### ScriptGenerator
+- `generate_script(card_data, effect_pattern, effect_params) -> str`
+- `save_script(card_id, script_content, overwrite) -> bool`
+- `generate_and_save(...) -> bool`
+- `list_available_patterns() -> dict`
+
+### ImageDownloader
+- `download_image(url, card_id, resize, overwrite) -> str`
+- `download_with_retry(url, card_id, max_retries) -> str`
+- `find_existing_image(card_id) -> str`
+- `verify_image(card_id) -> tuple[bool, str]`
+- `delete_image(card_id) -> bool`
+
+### CardCreator (Main Interface)
+- `create_card(card_data, image_url, effect_pattern, ...) -> bool`
+- `create_monster(...) -> bool`
+- `create_spell(...) -> bool`
+- `create_trap(...) -> bool`
+
+## Effect Patterns Available
+- `recover_lp` - Recover Life Points (param: amount)
+- `damage` - Inflict damage to opponent (param: amount)
+- `draw` - Draw cards (param: amount)
+- `atk_boost` - Boost ATK of all your monsters (param: amount)
+- `def_boost` - Boost DEF of all your monsters (param: amount)
+
+## Best Practices
+1. Always use SCOPE_OCG_TCG (0x3) for custom cards to show by default
+2. Start card IDs at 10000100 or higher
+3. Provide image URLs when possible for automation
+4. Test cards in-game immediately after creation
+5. Keep card descriptions clear and concise
+6. Use appropriate card types and subtypes
+7. Follow official card naming conventions
+8. Document complex custom effects in comments
+9. Back up cards.cdb before bulk operations
+10. Use consistent ID ranges for organization
+
+## Future Enhancement Ideas
+- Batch card import from CSV/JSON
+- Card image generation with AI
+- Effect builder GUI
+- Card testing framework
+- Template library expansion
+- Advanced effect patterns (targeting, conditions, costs)
+- Archetype/series support
+- Card export/sharing functionality
+
+## References
+- EDOPro Documentation: Check repositories/delta-bagooska for official cards
+- Lua Constants: See script/constant.lua in EDOPro
+- Card Database Tools: DataEditorX in buildCard directory
+- Official Scripts: Check script/official/ for examples
+
