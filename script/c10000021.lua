@@ -1,11 +1,11 @@
 --Huntrix Weapons
---Equip only to "Rumi", "Mira" or "Zoey". Increase ATK by 100.
+--Equip only to Demon Hunter-Type monsters. Increase ATK by 100.
 local s,id=GetID()
 function s.eqfilter(c)
-	return c:IsCode(10000017,10000018,10000019)
+	return c:IsRace(0x8000000) -- Demon Hunter race
 end
 function s.initial_effect(c)
-	--Equip procedure: can only be equipped to Rumi, Mira, or Zoey
+	--Equip procedure: can only be equipped to Demon Hunter-Type monsters
 	aux.AddEquipProcedure(c,nil,s.eqfilter)
 	--ATK up
 	local e2=Effect.CreateEffect(c)
@@ -14,5 +14,4 @@ function s.initial_effect(c)
 	e2:SetValue(100)
 	c:RegisterEffect(e2)
 end
-s.listed_names={10000017,10000018,10000019}
 

@@ -23,6 +23,7 @@ createCards/
 │   ├── spell_continuous.lua
 │   ├── trap_normal.lua
 │   └── trap_continuous.lua
+├── temp/                   # Temporary utility scripts (auto-generated, safe to delete)
 ├── README.md              # Full documentation
 ├── QUICK_START.txt        # Quick reference
 └── requirements.txt       # Python dependencies
@@ -279,6 +280,7 @@ When creating new functionality:
 8. Document complex custom effects in comments
 9. Back up cards.cdb before bulk operations
 10. Use consistent ID ranges for organization
+11. **Store temporary utility scripts in `temp/` directory** (verify, update, search scripts)
 
 ## Future Enhancement Ideas
 - Batch card import from CSV/JSON

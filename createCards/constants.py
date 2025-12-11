@@ -94,6 +94,9 @@ RACE_CREATORGOD = 0x400000
 RACE_WYRM = 0x800000
 RACE_CYBERSE = 0x1000000
 RACE_ILLUSION = 0x2000000
+RACE_DEMON = 0x4000000
+RACE_DEMON_HUNTER = 0x8000000
+RACE_SUNO = 0x10000000
 
 RACE_NAMES = {
     RACE_WARRIOR: "Warrior",
@@ -121,7 +124,10 @@ RACE_NAMES = {
     RACE_CREATORGOD: "Creator God",
     RACE_WYRM: "Wyrm",
     RACE_CYBERSE: "Cyberse",
-    RACE_ILLUSION: "Illusion"
+    RACE_ILLUSION: "Illusion",
+    RACE_DEMON: "Demon",
+    RACE_DEMON_HUNTER: "Demon Hunter",
+    RACE_SUNO: "Suno"
 }
 
 # ============================================
