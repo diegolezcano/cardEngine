@@ -5,13 +5,15 @@ from constants import get_race_name
 
 db = DatabaseManager('../../expansions/cards.cdb')
 
-# Verify cards
+# Verify all Suno race cards
 card_ids = {
+    10000004: 'Batty',
     10000010: 'Josefina - The Vampire',
+    10000011: 'Koala Pelancio',
     10000015: 'Queen of the Night'
 }
 
-print("Verifying Suno race updates...\n")
+print("Verifying all Suno race cards...\n")
 for card_id, card_name in card_ids.items():
     card = db.get_card(card_id)
     if card:
