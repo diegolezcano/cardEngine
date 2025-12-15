@@ -1,0 +1,95 @@
+# EDOPro Card Engine - Cursor Rules
+
+## Project Type
+Yu-Gi-Oh! EDOPro/YGOPRO custom card engine with SQLite database, Lua scripts, and Python card creation tools.
+
+## Critical Requirements
+
+### Image Format
+- **MUST use `.jpg` extension for card images** - NOT `.jpeg`
+- Game engine will NOT load `.jpeg` files
+- Location: `pics/{CARD_ID}.jpg`
+- If you receive `.jpeg` files, rename them immediately:
+  ```powershell
+  Rename-Item "pics\10000024.jpeg" -NewName "10000024.jpg"
+  ```
+
+### File Structure
+- **Database**: `expansions/cards.cdb` (SQLite)
+- **Scripts**: `script/c{CARD_ID}.lua` (Lua scripts)
+- **Images**: `pics/{CARD_ID}.jpg` (Card artwork)
+- **Card Creator**: `createCards/` (Python tools)
+
+### Card ID Ranges
+- 10000001-10000099: System/test cards
+- 10000100+: Available for new custom cards
+- Use `db.get_next_available_id()` to find free IDs
+
+## Windows Development Environment
+
+### Python
+- Use `py` command (not `python`)
+- Set UTF-8 encoding: `$env:PYTHONIOENCODING="utf-8"`
+- Run from createCards directory: `cd createCards; py script_name.py`
+
+### PowerShell Commands
+- Copy files: `Copy-Item "source" "destination" -Force`
+- Rename files: `Rename-Item "old.jpeg" -NewName "new.jpg"`
+- Check paths: `Test-Path "path\to\file"`
+- List files: `Get-ChildItem "path" | Format-Table Name, Length`
+
+## Common Operations
+
+### Update Existing Card
+1. Modify database entry (name, effect, type)
+2. Copy/update image to `pics/{CARD_ID}.jpg`
+3. Update/create Lua script in `script/c{CARD_ID}.lua`
+4. Ensure image is `.jpg` format
+
+### Create New Card
+1. Use CardCreator Python tools in `createCards/`
+2. Provide card data (name, type, effect)
+3. Provide image path (local or URL)
+4. Script auto-generates database entry, Lua script, and copies image
+
+### Quick Image Update
+```powershell
+Copy-Item "C:\path\to\new_image.jpeg" "pics\10000024.jpg" -Force
+```
+
+## Database Schema
+- **datas table**: Card stats (id, type, atk, def, level, race, attribute)
+- **texts table**: Card text (id, name, desc)
+- Use `DatabaseManager` class for all database operations
+
+## Lua Script Patterns
+- Every card needs `script/c{CARD_ID}.lua`
+- Function naming: `c{CARD_ID}.function_name`
+- Main entry: `c{CARD_ID}.initial_effect(c)`
+- See `createCards/templates/` for examples
+
+## Testing
+1. Update files (database, script, image)
+2. Restart EDOPro (required for script changes)
+3. Check card appears in deck editor
+4. Test in duel to verify effect works
+
+## Key Constants
+- `TYPE_SPELL = 0x2`, `TYPE_TRAP = 0x4`, `TYPE_MONSTER = 0x1`
+- `TYPE_QUICKPLAY = 0x10000`, `TYPE_CONTINUOUS = 0x20000`
+- `SCOPE_OCG_TCG = 0x3` (use for all custom cards)
+- See `createCards/constants.py` for full list
+
+## Best Practices
+1. **Always use `.jpg` for images, never `.jpeg`**
+2. Back up `expansions/cards.cdb` before bulk changes
+3. Test cards in-game immediately after creation
+4. Use descriptive card names and clear effect text
+5. Start new card IDs at 10000100 or higher
+6. Document complex effects with comments in Lua scripts
+7. Store temporary scripts in `createCards/temp/`
+
+## References
+- Detailed documentation: `createCards/README.md`
+- Quick start guide: `createCards/QUICK_START.txt`
+- Cursor rules for card creation: `createCards/.cursorrules`

@@ -108,7 +108,9 @@ class ScriptGenerator:
             else:
                 return 'spell_basic'
         elif is_trap(card_type):
-            if card_type & TYPE_CONTINUOUS:
+            if card_type & TYPE_COUNTER:
+                return 'trap_counter'
+            elif card_type & TYPE_CONTINUOUS:
                 return 'trap_continuous'
             else:
                 return 'trap_normal'

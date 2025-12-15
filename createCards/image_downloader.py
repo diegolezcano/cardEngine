@@ -5,6 +5,7 @@ Handles downloading, resizing, and validating card images from URLs
 
 import os
 import requests
+import shutil
 from typing import Optional, Tuple
 from pathlib import Path
 
@@ -249,6 +250,89 @@ class ImageDownloader:
         except Exception as e:
             print(f"✗ Error deleting image: {e}")
             return False
+    
+    def copy_local_image(self, source_path: str, card_id: int, resize: bool = True,
+                        overwrite: bool = False) -> Optional[str]:
+        """
+        Copy a local image file to the pics directory
+        
+        Args:
+            source_path: Path to the source image file
+            card_id: Card ID (used for filename)
+            resize: Whether to resize the image to recommended dimensions
+            overwrite: Whether to overwrite existing image files
+        
+        Returns:
+            Path to saved image file or None if failed
+        """
+        try:
+            # Check if source file exists
+            if not os.path.exists(source_path):
+                print(f"✗ Source image file not found: {source_path}")
+                return None
+            
+            # Check if image already exists
+            existing_path = self.find_existing_image(card_id)
+            if existing_path and not overwrite:
+                print(f"Image already exists: {existing_path}")
+                print(f"Use overwrite=True to replace it")
+                return existing_path
+            
+            print(f"Copying image from: {source_path}")
+            
+            # Determine file extension from source
+            source_ext = os.path.splitext(source_path)[1].lower()
+            if not source_ext:
+                source_ext = '.jpg'
+            
+            # Save path (always use .jpg after processing)
+            save_path = os.path.join(self.pics_directory, f"{card_id}.jpg")
+            
+            # Process image if PIL is available and resize is requested
+            if PIL_AVAILABLE and resize:
+                try:
+                    # Open image with PIL
+                    with Image.open(source_path) as img:
+                        # Get original dimensions
+                        orig_width, orig_height = img.size
+                        print(f"Original image size: {orig_width}x{orig_height}")
+                        
+                        # Resize if necessary
+                        if orig_width != self.RECOMMENDED_WIDTH or orig_height != self.RECOMMENDED_HEIGHT:
+                            print(f"Resizing to recommended size: {self.RECOMMENDED_WIDTH}x{self.RECOMMENDED_HEIGHT}")
+                            img = img.resize(
+                                (self.RECOMMENDED_WIDTH, self.RECOMMENDED_HEIGHT),
+                                Image.Resampling.LANCZOS if hasattr(Image, 'Resampling') else Image.LANCZOS
+                            )
+                        
+                        # Convert to RGB if necessary (for PNG with transparency)
+                        if img.mode in ('RGBA', 'LA', 'P'):
+                            rgb_img = Image.new('RGB', img.size, (255, 255, 255))
+                            if img.mode == 'P':
+                                img = img.convert('RGBA')
+                            rgb_img.paste(img, mask=img.split()[-1] if img.mode in ('RGBA', 'LA') else None)
+                            img = rgb_img
+                        
+                        # Save as JPEG
+                        img.save(save_path, 'JPEG', quality=95)
+                        print(f"✓ Image processed and saved: {save_path}")
+                        
+                except Exception as e:
+                    print(f"Warning: Could not process image with PIL: {e}")
+                    print(f"Copying original image without processing...")
+                    # Copy original file
+                    shutil.copy2(source_path, save_path)
+                    print(f"✓ Image copied (original): {save_path}")
+            else:
+                # Copy file without processing
+                shutil.copy2(source_path, save_path)
+                print(f"✓ Image copied: {save_path}")
+            
+            return save_path
+            
+        except Exception as e:
+            print(f"✗ Error copying image: {e}")
+            return None
     
     def download_with_retry(self, url: str, card_id: int, max_retries: int = 3,
                            resize: bool = True, overwrite: bool = False) -> Optional[str]:

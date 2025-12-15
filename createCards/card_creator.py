@@ -81,13 +81,23 @@ class CardCreator:
         else:
             print(f"\n[2/3] Skipping script generation")
         
-        # Step 3: Download image (if URL provided)
+        # Step 3: Download or copy image (if URL/path provided)
         if image_url:
-            print(f"\n[3/3] Downloading card image...")
-            result = self.image_downloader.download_with_retry(image_url, card_id, 
-                                                               resize=True, overwrite=overwrite)
+            print(f"\n[3/3] Processing card image...")
+            # Check if it's a local file path or URL
+            is_local_file = not image_url.lower().startswith(('http://', 'https://'))
+            
+            if is_local_file:
+                # Local file - copy it
+                result = self.image_downloader.copy_local_image(image_url, card_id, 
+                                                                resize=True, overwrite=overwrite)
+            else:
+                # URL - download it
+                result = self.image_downloader.download_with_retry(image_url, card_id, 
+                                                                   resize=True, overwrite=overwrite)
+            
             if not result:
-                print(f"⚠ Warning: Failed to download image (card is still in database)")
+                print(f"⚠ Warning: Failed to process image (card is still in database)")
         else:
             print(f"\n[3/3] No image URL provided, skipping image download")
             print(f"    You can manually place the image at: pics/{card_id}.jpg")
@@ -321,7 +331,8 @@ def main():
     
     if args.type == 'monster':
         # Validate monster parameters
-        if args.atk is None or args.def is None or args.level is None:
+        def_val = getattr(args, 'def')
+        if args.atk is None or def_val is None or args.level is None:
             print("Error: Monsters require --atk, --def, and --level")
             return 1
         if args.attribute is None or args.race is None:
@@ -346,7 +357,7 @@ def main():
             name=args.name,
             desc=args.desc,
             atk=args.atk,
-            def_val=args.def,
+            def_val=def_val,
             level=args.level,
             attribute=attribute,
             race=race,

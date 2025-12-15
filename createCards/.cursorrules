@@ -32,7 +32,7 @@ createCards/
 ## Key Paths (Relative to YGOEngine root)
 - **Database**: `expansions/cards.cdb`
 - **Scripts**: `script/c{CARD_ID}.lua`
-- **Images**: `pics/{CARD_ID}.jpg` or `.png`
+- **Images**: `pics/{CARD_ID}.jpg` (MUST be `.jpg`, not `.jpeg` - game won't load `.jpeg` files)
 - **Source**: `createCards/` (this directory)
 
 ## Card ID Conventions
@@ -106,6 +106,9 @@ end
 - `Duel.Damage(player, amount, REASON_EFFECT)` - Inflict damage
 - `Duel.Draw(player, count, REASON_EFFECT)` - Draw cards
 - `Duel.Destroy(card/group, REASON_EFFECT)` - Destroy cards
+- `Duel.GetFieldGroup(tp, LOCATION_HAND, 0)` - Get player's hand
+- `Duel.ConfirmCards(player, group)` - Reveal cards to player
+- `Duel.SwapControl(card1, card2)` - Exchange control of cards
 
 ### Effect Function Parameters
 - `e` - The effect object
@@ -118,6 +121,18 @@ end
 - `rp` - Reason player
 
 ## Common Tasks & Patterns
+
+### Updating an Existing Card
+```python
+db = DatabaseManager("../expansions/cards.cdb")
+card_data = {
+    'id': 10000024,
+    'name': "New Name",
+    'desc': "New effect description",
+    'type': TYPE_SPELL_QUICKPLAY
+}
+db.update_card(card_data)  # Updates only specified fields
+```
 
 ### Creating a Simple Healing Spell
 ```python
@@ -144,8 +159,49 @@ creator.create_monster(
 )
 ```
 
+### Using Local Images Instead of URLs
+```python
+# CardCreator automatically detects local paths
+creator.create_spell(
+    card_id=10000025,
+    name="My Card",
+    desc="Effect text",
+    image_url=r"C:\Users\...\image.jpg"  # Local path
+)
+
+# Or copy manually with PowerShell
+Copy-Item "source.jpeg" "pics\10000025.jpg" -Force
+# CRITICAL: Rename .jpeg to .jpg if needed!
+Rename-Item "pics\10000025.jpeg" -NewName "10000025.jpg"
+```
+
 ### Adding Custom Effect (No Template)
 Set `effect_pattern=None` and manually edit the generated Lua script in `script/c{CARD_ID}.lua`
+
+### Advanced: Hand Interaction Effect
+```lua
+-- Example: Card exchange effect (from Switchy!)
+function c10000024.activate(e,tp,eg,ep,ev,re,r,rp)
+    -- Get both players' hands
+    local h1=Duel.GetFieldGroup(tp,LOCATION_HAND,0)
+    local h2=Duel.GetFieldGroup(tp,0,LOCATION_HAND)
+    
+    -- Reveal hands to opponents
+    Duel.ConfirmCards(1-tp,h1)
+    Duel.ConfirmCards(tp,h2)
+    
+    -- Each player selects a card to exchange
+    if #h1>0 and #h2>0 then
+        local g1=h1:Select(tp,1,1,nil)
+        local g2=h2:Select(1-tp,1,1,nil)
+        
+        -- Swap control of selected cards
+        if #g1>0 and #g2>0 then
+            Duel.SwapControl(g1:GetFirst(),g2:GetFirst())
+        end
+    end
+end
+```
 
 ### Batch Card Creation
 ```python
@@ -161,6 +217,12 @@ for i in range(5):
 ```
 
 ## Development Guidelines
+
+### Windows Environment Notes
+- Use `py` command instead of `python` (Windows Python Launcher)
+- Set UTF-8 encoding: `$env:PYTHONIOENCODING="utf-8"` before running scripts
+- Use raw strings for paths: `r"C:\Users\..."`
+- PowerShell commands work better than cmd for file operations
 
 ### When Adding New Features
 1. **New effect pattern**: Add to `ScriptGenerator.EFFECT_PATTERNS` dict
@@ -202,11 +264,18 @@ Always use these in Lua templates:
 - Check with `db.card_exists(card_id)`
 - Use `db.get_next_available_id()` to find free ID
 
+### Images not showing in game
+- **CRITICAL**: Game only loads `.jpg` files, NOT `.jpeg`
+- Use PowerShell to rename: `Rename-Item "pics\10000024.jpeg" -NewName "10000024.jpg"`
+- Check file exists: `Test-Path "pics\10000024.jpg"` should return `True`
+- Verify filename matches card ID exactly
+
 ### Image download fails
 - Verify URL is accessible
 - Check internet connection
 - Fallback: manually place image in pics/ folder
 - Install Pillow for image processing
+- For local images, use raw string: `r"C:\path\to\image.jpg"`
 
 ### Script not working in-game
 - Check Lua syntax in generated script
@@ -272,15 +341,18 @@ When creating new functionality:
 ## Best Practices
 1. Always use SCOPE_OCG_TCG (0x3) for custom cards to show by default
 2. Start card IDs at 10000100 or higher
-3. Provide image URLs when possible for automation
-4. Test cards in-game immediately after creation
-5. Keep card descriptions clear and concise
-6. Use appropriate card types and subtypes
-7. Follow official card naming conventions
-8. Document complex custom effects in comments
-9. Back up cards.cdb before bulk operations
-10. Use consistent ID ranges for organization
-11. **Store temporary utility scripts in `temp/` directory** (verify, update, search scripts)
+3. **CRITICAL: Images MUST be `.jpg` format** - Game won't load `.jpeg`, `.png` works but `.jpg` is standard
+4. Provide image URLs/paths when possible for automation
+5. Test cards in-game immediately after creation
+6. Keep card descriptions clear and concise
+7. Use appropriate card types and subtypes
+8. Follow official card naming conventions
+9. Document complex custom effects in comments
+10. Back up cards.cdb before bulk operations
+11. Use consistent ID ranges for organization
+12. **Store temporary utility scripts in `temp/` directory** (verify, update, search scripts)
+13. When updating existing cards, use `db.update_card()` not `db.add_card()`
+14. Set `$env:PYTHONIOENCODING="utf-8"` before running Python scripts on Windows
 
 ## Future Enhancement Ideas
 - Batch card import from CSV/JSON
