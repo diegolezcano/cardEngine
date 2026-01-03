@@ -21,12 +21,9 @@ function c10000029.cost(e,tp,eg,ep,ev,re,r,rp,chk)
 	Duel.PayLPCost(tp,500)
 end
 
--- Filter: Demon Hunter Normal/Effect monsters only (no Fusion, Synchro, Xyz, Link, Ritual)
+-- Filter: Demon Hunter monsters that can be special summoned
 function c10000029.filter(c,e,tp)
-	return c:IsRace(0x8000000) 
-		and c:IsType(TYPE_MONSTER)
-		and not c:IsType(TYPE_FUSION+TYPE_SYNCHRO+TYPE_XYZ+TYPE_LINK+TYPE_RITUAL)
-		and c:IsCanBeSpecialSummoned(e,0,tp,false,false)
+	return c:IsRace(RACE_DEMON_HUNTER) and c:IsCanBeSpecialSummoned(e,0,tp,false,false)
 end
 
 -- Target: Check if there are Demon Hunter monsters available and monster zones
